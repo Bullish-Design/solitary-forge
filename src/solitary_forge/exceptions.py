@@ -26,3 +26,18 @@ class TemplateError(ForgeError):
 class GitOperationError(PluginError):
     """Raised when Git operations fail."""
     pass
+
+
+class SecurityError(ForgeError):
+    """Raised when security policies are violated."""
+    pass
+
+
+class ValidationError(ForgeError):
+    """Raised when validation fails."""
+    pass
+
+
+class DependencyError(PluginError):
+    """Raised when dependency resolution fails."""
+    pass

@@ -13,6 +13,7 @@ from rich.console import Console
 
 from .exceptions import GitOperationError, PluginError
 from .models import PluginConfig, PluginManifest
+from .settings import TEST_MODE
 
 
 class Plugin(BaseModel):
@@ -24,8 +25,6 @@ class Plugin(BaseModel):
     manifest: Optional[PluginManifest] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    # class Config:
-    #    arbitrary_types_allowed = True
 
     @property
     def templates_path(self) -> Path:
@@ -55,7 +54,6 @@ class Plugin(BaseModel):
 
         templates = []
         for template_file in self.templates_path.rglob("*.j2"):
-            # Get relative path from templates directory
             rel_path = template_file.relative_to(self.templates_path)
             templates.append(str(rel_path))
 
@@ -63,14 +61,12 @@ class Plugin(BaseModel):
 
 
 class PluginManager(BaseModel):
-    """Manages plugin lifecycle and caching."""
+    """Enhanced plugin manager with installation capabilities."""
 
     cache_dir: Path
     console: Console = Console()
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
-    # class Config:
-    #    arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow" if TEST_MODE else "forbid")
 
     def __init__(self, cache_dir: Path, **kwargs):
         super().__init__(cache_dir=cache_dir, **kwargs)
@@ -96,11 +92,8 @@ class PluginManager(BaseModel):
         plugin_path = self._ensure_plugin_available(config)
 
         plugin = Plugin(name=config.name, path=plugin_path, config=config.config)
-
-        # Load manifest if available
         plugin.load_manifest()
 
-        # Validate plugin has templates
         if not plugin.has_templates:
             raise PluginError(f"Plugin '{config.name}' has no templates directory")
 
@@ -124,7 +117,6 @@ class PluginManager(BaseModel):
             self._checkout_version(repo, config.version)
             return target_path
         except git_exc.GitCommandError as e:
-            # Clean up partial clone on failure
             if target_path.exists():
                 shutil.rmtree(target_path)
             raise GitOperationError(f"Failed to clone plugin '{config.name}': {e}")
@@ -133,19 +125,13 @@ class PluginManager(BaseModel):
         """Update an existing plugin repository."""
         try:
             repo = Repo(plugin_path)
-
-            # Fetch latest changes
             self.console.print(f"Updating plugin '[cyan]{config.name}[/cyan]'...")
             repo.remotes.origin.fetch()
-
-            # Checkout requested version
             self._checkout_version(repo, config.version)
-
             return plugin_path
         except git_exc.GitCommandError as e:
             raise GitOperationError(f"Failed to update plugin '{config.name}': {e}")
         except git_exc.InvalidGitRepositoryError:
-            # Cache directory exists but isn't a git repo - remove and reclone
             shutil.rmtree(plugin_path)
             return self._clone_plugin(config, plugin_path)
 
@@ -175,4 +161,3 @@ class PluginManager(BaseModel):
             return []
 
         return [p.name for p in self.cache_dir.iterdir() if p.is_dir() and (p / ".git").exists()]
-

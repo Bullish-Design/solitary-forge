@@ -1,4 +1,4 @@
-# examples/demo.py
+# src/examples/demo.py
 """
 Minimal example script demonstrating all solitary-forge functionality.
 

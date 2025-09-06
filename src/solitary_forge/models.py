@@ -49,6 +49,7 @@ class ForgeConfig(BaseModel):
     variables: Dict[str, Any] = Field(default_factory=dict, description="Global template variables")
     plugins: List[PluginConfig] = Field(default_factory=list, description="Plugin configurations")
     render: List[RenderConfig] = Field(default_factory=list, description="Template render configurations")
+    environments: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Environment overrides")
 
     @field_validator("plugins")
     def validate_plugins(cls, v: List[PluginConfig]) -> List[PluginConfig]:
@@ -91,6 +92,9 @@ class PluginManifest(BaseModel):
     version: str = Field(..., description="Plugin version")
     description: str = Field(default="", description="Plugin description")
     dependencies: List[str] = Field(default_factory=list, description="Plugin dependencies")
+    file_types: List[str] = Field(default_factory=list, description="Supported file types")
+    author: str = Field(default="", description="Plugin author")
+    tags: List[str] = Field(default_factory=list, description="Plugin tags")
 
     @classmethod
     def from_yaml_file(cls, path: Path) -> PluginManifest:
@@ -106,4 +110,3 @@ class PluginManifest(BaseModel):
             return cls.model_validate(data or {})
         except yaml.YAMLError as e:
             raise ValueError(f"Invalid plugin manifest YAML: {e}")
-
