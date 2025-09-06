@@ -1,0 +1,28 @@
+# .forge.yml
+variables:
+  project_name: "test-project"
+  base_image: "nixos/nix:latest"
+  container_name: "test-project-dev"
+  workdir: "/workspace"
+  python_version: "python313"
+
+plugins:
+  - name: "core"
+    git: "https://github.com/example/forge-plugin-core.git"
+    version: "main"
+  - name: "python-dev"
+    git: "https://github.com/example/forge-plugin-python.git"
+    version: "main"
+    config:
+      packages:
+        - "uv"
+        - "git"
+      python_version: "313"
+
+render:
+  - template: "Dockerfile.j2"
+    output: "Dockerfile"
+  - template: "docker-compose.yml.j2"
+    output: "docker-compose.yml"
+  - template: "devenv.nix.j2"
+    output: "devenv.nix"
